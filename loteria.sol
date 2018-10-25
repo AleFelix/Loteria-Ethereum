@@ -4,7 +4,7 @@ contract Loteria {
     
     address public propietario;
     uint public pozoAcumulado;
-    uint64 semillaActual;
+    uint semillaActual;
     uint public inicioRonda;
     address[] public participantes;
     mapping (address => uint) public depositos;
@@ -27,10 +27,11 @@ contract Loteria {
     function depositar() public payable {
         require(msg.value > 0, "El monto a depositar debe ser mayor a cero");
         require(block.timestamp - inicioRonda < TIEMPO_MAXIMO, "La ronda anterior aun no se ha completado");
+        require(msg.value + pozoAcumulado < 10000000000 ether, "El monto a depositar supera el limite de Ether permitido en el pozo");
         depositos[msg.sender] = msg.value;
         participantes.push(msg.sender);
         pozoAcumulado += msg.value;
-        semillaActual = uint64(keccak256(keccak256(msg.sender, semillaActual)));
+        semillaActual = uint(keccak256(keccak256(msg.sender, semillaActual)));
         emit Deposito(msg.sender, msg.value);
     }
     
@@ -38,7 +39,7 @@ contract Loteria {
         if (block.timestamp - inicioRonda < TIEMPO_MAXIMO || pozoAcumulado == 0) {
             return false;
         }
-        semillaActual = uint64(keccak256(keccak256(block.number, semillaActual)));
+        semillaActual = uint(keccak256(keccak256(block.number, semillaActual)));
         uint numGanador = semillaActual % pozoAcumulado;
         pagarGanador(numGanador);
         reiniciarRonda();
