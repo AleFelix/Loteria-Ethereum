@@ -1,0 +1,22 @@
+.App {
+  text-align: center;
+}
+
+.listaDepositos {
+  overflow: auto;
+  max-height: 200px;
+}
+
+.container {
+  max-width: 80%;
+  margin: 0 auto !important;
+}
+
+.paper-space {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.icono {
+  margin-left: 5px;
+}
