@@ -7,17 +7,19 @@ contract Loteria {
     uint64 semillaActual;
     uint public inicioRonda;
     uint public numBloqueSorteo;
+    uint public idRondaActual;
     address[] public participantes;
     mapping (address => uint) public depositos;
     uint constant COSTO_TRANSFERENCIA = 2300;
     uint constant TIEMPO_MAXIMO = 80;
-    event Deposito(address desde, uint monto);
-    event Sorteo(address ganador, uint monto);
+    event Deposito(address desde, uint monto, uint idRonda);
+    event Sorteo(address ganador, uint monto, uint idRonda);
     
     constructor() public {
         propietario = msg.sender;
         pozoAcumulado = 0;
         semillaActual = 0;
+        idRondaActual = 0;
         inicioRonda = block.timestamp;
         numBloqueSorteo = block.number;
     }
@@ -36,7 +38,7 @@ contract Loteria {
         participantes.push(msg.sender);
         pozoAcumulado += msg.value;
         semillaActual = uint64(keccak256(keccak256(msg.sender, semillaActual)));
-        emit Deposito(msg.sender, msg.value);
+        emit Deposito(msg.sender, msg.value, idRondaActual);
     }
     
     function sortearPozo() public {
@@ -44,6 +46,7 @@ contract Loteria {
         semillaActual = uint64(keccak256(keccak256(block.number, semillaActual)));
         uint numGanador = semillaActual % pozoAcumulado;
         pagarGanador(numGanador);
+        idRondaActual++;
         reiniciarRonda();
     }
     
@@ -58,7 +61,7 @@ contract Loteria {
             }
         }
         ganador.transfer(pozoAcumulado);
-        emit Sorteo(ganador, pozoAcumulado);
+        emit Sorteo(ganador, pozoAcumulado, idRondaActual);
     }
     
     function reiniciarRonda() private {

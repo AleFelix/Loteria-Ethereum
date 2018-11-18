@@ -16,8 +16,39 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import ListSubheader from '@material-ui/core/ListSubheader';
 
 import "./LoteriaApp.css";
+
+function HeaderLista(props) {
+  return (
+    <ListSubheader>
+      <Grid container>
+        <Grid item xs>
+          <ListItemText primary={props.columna1} />
+        </Grid>
+        <Grid item xs>
+          <ListItemText primary={props.columna2} />
+        </Grid>
+      </Grid>
+    </ListSubheader>
+  );
+}
+
+function ItemListaDepositos(props) {
+  return (
+    <ListItem button divider key={props.listKey}>
+      <Grid container>
+        <Grid item xs>
+          <ListItemText primary={props.direccion} />
+        </Grid>
+        <Grid item xs align="right">
+          <ListItemText primary={props.monto + " ETH"} />
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
 
 function AlertDialog(props) {
 
@@ -56,6 +87,7 @@ class LoteriaApp extends Component {
     contract: null,
     depositosRealizados: [],
     sorteosRealizados: [],
+    depositosTotales: [],
     montoADepositar: '',
     isModalOpen: false,
     pozoAcumulado: 0,
@@ -125,39 +157,48 @@ class LoteriaApp extends Component {
       } else {
         console.log(res);
         const monto = web3.utils.fromWei(res.args.monto.toString(), 'ether');
-        if (res.event === "Deposito" && res.blockNumber >= numBloqueInicioRonda) {
-          const item = (
-            <ListItem button divider key={this.state.depositosRealizados.length}>
-              <Grid container>
-                <Grid item xs>
-                  <ListItemText primary={res.args.desde} />
-                </Grid>
-                <Grid item xs align="right">
-                  <ListItemText primary={monto + " ETH"} />
-                </Grid>
-              </Grid>
-            </ListItem>
-          );
+        if (res.event === "Deposito") {
+          const itemDepositosTotales = <ItemListaDepositos
+            key={this.state.depositosTotales.length}
+            listKey={this.state.depositosTotales.length}
+            direccion={res.args.desde}
+            monto={monto}
+          />;
           this.setState(prevState => ({
-            depositosRealizados: prevState.depositosRealizados.concat(item)
+            depositosTotales: [itemDepositosTotales].concat(prevState.depositosTotales)
           }));
+          if (res.blockNumber >= numBloqueInicioRonda) {
+            const itemDepositosRealizados = <ItemListaDepositos
+              key={this.state.depositosRealizados.length}
+              listKey={this.state.depositosRealizados.length}
+              direccion={res.args.desde}
+              monto={monto}
+            />;
+            this.setState(prevState => ({
+              depositosRealizados: [itemDepositosRealizados].concat(prevState.depositosRealizados)
+            }));
+          }
         }
         if (res.event === "Sorteo") {
-          const item = (
-            <ListItem button divider key={this.state.sorteosRealizados.length}>
+          const itemDepositosRealizados = <ItemListaDepositos
+            key={this.state.sorteosRealizados.length}
+            listKey={this.state.sorteosRealizados.length}
+            direccion={res.args.ganador}
+            monto={monto}
+          />;
+          const separadorRonda = (
+            <ListItem button divider key={this.state.depositosTotales.length}>
               <Grid container>
-                <Grid item xs>
-                  <ListItemText primary={res.args.ganador} />
-                </Grid>
-                <Grid item xs align="right">
-                  <ListItemText primary={monto + " ETH"} />
+                <Grid item xs align="center">
+                  <ListItemText primary={"Ronda " + res.args.idRonda + " Finalizada - Total: " + monto + " ETH"} />
                 </Grid>
               </Grid>
             </ListItem>
           );
           this.setState(prevState => ({
-            sorteosRealizados: prevState.sorteosRealizados.concat(item),
-            depositosRealizados: []
+            sorteosRealizados: [itemDepositosRealizados].concat(prevState.sorteosRealizados),
+            depositosRealizados: [],
+            depositosTotales: [separadorRonda].concat(prevState.depositosTotales)
           }));
         }
         contract.pozoAcumulado.call().then((res) => {
@@ -295,8 +336,9 @@ class LoteriaApp extends Component {
           <Grid item xs={12}>
             <Paper className="paper-space">
               <Typography variant="h5">
-                Lista de Depositos
+                Lista de Depositos en Ronda Actual
               </Typography>
+              <HeaderLista columna1="Dirección" columna2="Monto" />
               <List className="listaDepositos" component="ul">
                 {this.state.depositosRealizados}
               </List>
@@ -307,8 +349,20 @@ class LoteriaApp extends Component {
               <Typography variant="h5">
                 Lista de Sorteos Anteriores
               </Typography>
+              <HeaderLista columna1="Ganador" columna2="Monto" />
               <List className="listaDepositos" component="ul">
                 {this.state.sorteosRealizados}
+              </List>
+            </Paper>
+          </Grid>
+          <Grid item xs={12}>
+            <Paper className="paper-space">
+              <Typography variant="h5">
+                Historico de Depositos
+              </Typography>
+              <HeaderLista columna1="Dirección" columna2="Monto" />
+              <List className="listaDepositos" component="ul">
+                {this.state.depositosTotales}
               </List>
             </Paper>
           </Grid>
