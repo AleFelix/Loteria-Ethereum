@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import blueGrey from '@material-ui/core/colors/blueGrey';
 import LoteriaContract from "./contracts/Loteria.json";
 import getWeb3 from "./utils/getWeb3";
 import truffleContract from "truffle-contract";
@@ -21,14 +23,19 @@ import ListSubheader from '@material-ui/core/ListSubheader';
 import "./LoteriaApp.css";
 
 function HeaderLista(props) {
+
+  const typographyProps = {
+    variant: "h6"
+  };
+
   return (
-    <ListSubheader>
+    <ListSubheader component="div" className="header-lista">
       <Grid container>
         <Grid item xs>
-          <ListItemText primary={props.columna1} />
+          <ListItemText primaryTypographyProps={typographyProps} primary={props.columna1} />
         </Grid>
         <Grid item xs>
-          <ListItemText primary={props.columna2} />
+          <ListItemText primaryTypographyProps={typographyProps} primary={props.columna2} />
         </Grid>
       </Grid>
     </ListSubheader>
@@ -95,6 +102,18 @@ class LoteriaApp extends Component {
     modalTitle: "",
     modalDesc: ""
   };
+
+  theme = createMuiTheme({
+    palette: {
+      primary: blueGrey,
+      background: {
+        paper: "#fcf5ff"
+      }
+    },
+    typography: {
+      useNextVariants: true
+    }
+  });
 
   componentDidMount = async () => {
     try {
@@ -190,7 +209,10 @@ class LoteriaApp extends Component {
             <ListItem button divider key={this.state.depositosTotales.length}>
               <Grid container>
                 <Grid item xs align="center">
-                  <ListItemText primary={"Ronda " + res.args.idRonda + " Finalizada - Total: " + monto + " ETH"} />
+                  <ListItemText
+                    primaryTypographyProps={{style:{fontWeight: "bold"}}}
+                    primary={"Ronda " + res.args.idRonda + " Finalizada - Total: " + monto + " ETH"} 
+                  />
                 </Grid>
               </Grid>
             </ListItem>
@@ -272,6 +294,7 @@ class LoteriaApp extends Component {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
     return (
+      <MuiThemeProvider theme={this.theme}>
       <div className="App">
         <Grid className="container" container spacing={24}>
           <Grid item xs={12}>
@@ -283,10 +306,11 @@ class LoteriaApp extends Component {
                 <Grid container>
                   <Grid item xs={12}>
                     <TextField
+                      className="campo-texto"
                       label="Monto (Ether)"
                       value={this.state.montoADepositar}
                       onChange={this.handleChanges('montoADepositar')}
-                      margin="normal"
+                      //margin="dense"
                       variant="outlined"
                       />
                   </Grid>
@@ -336,7 +360,7 @@ class LoteriaApp extends Component {
           <Grid item xs={12}>
             <Paper className="paper-space">
               <Typography variant="h5">
-                Lista de Depositos en Ronda Actual
+                Lista de Depósitos en la Ronda Actual
               </Typography>
               <HeaderLista columna1="Dirección" columna2="Monto" />
               <List className="listaDepositos" component="ul">
@@ -358,7 +382,7 @@ class LoteriaApp extends Component {
           <Grid item xs={12}>
             <Paper className="paper-space">
               <Typography variant="h5">
-                Historico de Depositos
+                Historial de Depósitos
               </Typography>
               <HeaderLista columna1="Dirección" columna2="Monto" />
               <List className="listaDepositos" component="ul">
@@ -374,6 +398,7 @@ class LoteriaApp extends Component {
         description={this.state.modalDesc}
         />
       </div>
+      </MuiThemeProvider>
     );
   }
 }
