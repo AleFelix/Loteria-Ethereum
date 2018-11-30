@@ -4,16 +4,17 @@ contract Loteria {
     
     address public propietario;
     uint public pozoAcumulado;
-    uint64 semillaActual;
+    uint64 internal semillaActual;
     uint public inicioRonda;
     uint public numBloqueSorteo;
     uint public idRondaActual;
     address[] public participantes;
+    mapping (address => bool) public participantesExistentes;
     mapping (address => uint) public depositos;
     uint constant COSTO_TRANSFERENCIA = 2300;
     uint constant TIEMPO_MAXIMO = 80;
     event Deposito(address desde, uint monto, uint idRonda);
-    event Sorteo(address ganador, uint monto, uint idRonda);
+    event Sorteo(address ganador, uint monto, uint idRonda, uint numGanador);
     
     constructor() public {
         propietario = msg.sender;
@@ -35,39 +36,22 @@ contract Loteria {
         }
         require(block.timestamp - inicioRonda < TIEMPO_MAXIMO, "La ronda anterior aun no se ha completado");
         depositos[msg.sender] = msg.value;
-        participantes.push(msg.sender);
+        if (!participantesExistentes[msg.sender]) {
+            participantesExistentes[msg.sender] = true;
+            participantes.push(msg.sender);
+        }
         pozoAcumulado += msg.value;
         semillaActual = uint64(keccak256(keccak256(msg.sender, semillaActual)));
         emit Deposito(msg.sender, msg.value, idRondaActual);
     }
+
+    function sortearPozo() public;
     
-    function sortearPozo() public {
-        require(block.timestamp - inicioRonda >= TIEMPO_MAXIMO && pozoAcumulado > 0, "El tiempo de la ronda aun no ha finalizado.");
-        semillaActual = uint64(keccak256(keccak256(block.number, semillaActual)));
-        uint numGanador = semillaActual % pozoAcumulado;
-        pagarGanador(numGanador);
-        idRondaActual++;
-        reiniciarRonda();
-    }
-    
-    function pagarGanador(uint numGanador) private {
-        uint montoAcumulado = 0;
-        address ganador;
-        for (uint i = 0 ; i < participantes.length; i++) {
-            montoAcumulado += depositos[participantes[i]];
-            if (numGanador <= montoAcumulado) {
-                ganador = participantes[i];
-                break;
-            }
-        }
-        ganador.transfer(pozoAcumulado);
-        emit Sorteo(ganador, pozoAcumulado, idRondaActual);
-    }
-    
-    function reiniciarRonda() private {
+    function reiniciarRonda() internal {
         pozoAcumulado = 0;
         for (uint i = 0 ; i < participantes.length; i++) {
             delete depositos[participantes[i]];
+            delete participantesExistentes[participantes[i]];
         }
         inicioRonda = block.timestamp;
         numBloqueSorteo = block.number;

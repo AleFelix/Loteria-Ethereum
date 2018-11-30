@@ -10,24 +10,33 @@ import { List, ListSubheader, ListItemText, ListItem, Grid, Dialog,
 
 import "./LoteriaApp.css";
 
-function HeaderLista(props) {
+class HeaderLista extends Component {
 
-  const typographyProps = {
+  typographyProps = {
     variant: "h6"
   };
 
-  return (
-    <ListSubheader component="div" className="header-lista">
-      <Grid container>
-        <Grid item xs>
-          <ListItemText primaryTypographyProps={typographyProps} primary={props.columna1} />
+  generarItemsHeader = () => {
+    const itemsHeader = [];
+    for (let i = 0; i < this.props.columnas.length; i++) {
+      itemsHeader.push(
+        <Grid item sm={this.props.anchoColumnas[i]}>
+          <ListItemText primaryTypographyProps={this.typographyProps} primary={this.props.columnas[i]} />
         </Grid>
-        <Grid item xs>
-          <ListItemText primaryTypographyProps={typographyProps} primary={props.columna2} />
+      );
+    }
+    return itemsHeader;
+  };
+
+  render() {
+    return (
+      <ListSubheader component="div" className="header-lista">
+        <Grid container>
+          {this.generarItemsHeader()}
         </Grid>
-      </Grid>
-    </ListSubheader>
-  );
+      </ListSubheader>
+    );
+  }
 }
 
 function ItemListaDepositos(props) {
@@ -39,6 +48,27 @@ function ItemListaDepositos(props) {
         </Grid>
         <Grid item xs align="right">
           <ListItemText primary={props.monto + " ETH"} />
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
+
+function ItemListaSorteos(props) {
+  return (
+    <ListItem button divider key={props.listKey}>
+      <Grid container>
+        <Grid item md={1} align="center">
+          <ListItemText primary={props.ronda} />
+        </Grid>
+        <Grid item md={6} align="center">
+          <ListItemText primary={props.direccion} />
+        </Grid>
+        <Grid item md={2} align="center">
+          <ListItemText primary={props.monto + " ETH"} />
+        </Grid>
+        <Grid item md={3} align="center">
+          <ListItemText primary={props.numGanador} />
         </Grid>
       </Grid>
     </ListItem>
@@ -188,11 +218,19 @@ class LoteriaAppRetirable extends Component {
           }
         }
         if (res.event === "Sorteo") {
-          const itemDepositosRealizados = <ItemListaDepositos
+          // const itemDepositosRealizados = <ItemListaDepositos
+          //   key={this.state.sorteosRealizados.length}
+          //   listKey={this.state.sorteosRealizados.length}
+          //   direccion={res.args.ganador}
+          //   monto={monto}
+          // />;
+          const itemSorteosRealizados = <ItemListaSorteos
             key={this.state.sorteosRealizados.length}
             listKey={this.state.sorteosRealizados.length}
+            ronda={res.args.idRonda.toString()}
             direccion={res.args.ganador}
             monto={monto}
+            numGanador={res.args.numGanador.toString()}
           />;
           const separadorRonda = (
             <ListItem button divider key={this.state.depositosTotales.length}>
@@ -207,7 +245,7 @@ class LoteriaAppRetirable extends Component {
             </ListItem>
           );
           this.setState(prevState => ({
-            sorteosRealizados: [itemDepositosRealizados].concat(prevState.sorteosRealizados),
+            sorteosRealizados: [itemSorteosRealizados].concat(prevState.sorteosRealizados),
             depositosRealizados: [],
             depositosTotales: [separadorRonda].concat(prevState.depositosTotales)
           }));
@@ -401,7 +439,10 @@ class LoteriaAppRetirable extends Component {
               <Typography variant="h5">
                 Lista de Depósitos en la Ronda Actual
               </Typography>
-              <HeaderLista columna1="Dirección" columna2="Monto" />
+              <HeaderLista
+                columnas={["Dirección", "Monto"]}
+                anchoColumnas={[6,6]}
+              />
               <List className="listaDepositos" component="ul">
                 {this.state.depositosRealizados}
               </List>
@@ -412,7 +453,10 @@ class LoteriaAppRetirable extends Component {
               <Typography variant="h5">
                 Lista de Sorteos Anteriores
               </Typography>
-              <HeaderLista columna1="Ganador" columna2="Monto" />
+              <HeaderLista
+                columnas={["Ronda", "Ganador", "Monto", "Número"]}
+                anchoColumnas={[1,6,2,3]}
+              />
               <List className="listaDepositos" component="ul">
                 {this.state.sorteosRealizados}
               </List>
@@ -423,7 +467,10 @@ class LoteriaAppRetirable extends Component {
               <Typography variant="h5">
                 Historial de Depósitos
               </Typography>
-              <HeaderLista columna1="Dirección" columna2="Monto" />
+              <HeaderLista
+                columnas={["Dirección", "Monto"]}
+                anchoColumnas={[6,6]}
+              />
               <List className="listaDepositos" component="ul">
                 {this.state.depositosTotales}
               </List>

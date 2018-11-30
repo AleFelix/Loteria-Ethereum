@@ -2,20 +2,18 @@ pragma solidity ^0.4.24;
 
 import "./Loteria.sol";
 
-contract LoteriaRetirable is Loteria {
-
-    mapping (address => uint) public ganancias;
+contract LoteriaNormal is Loteria {
     
     function sortearPozo() public {
         require(block.timestamp - inicioRonda >= TIEMPO_MAXIMO && pozoAcumulado > 0, "El tiempo de la ronda aun no ha finalizado.");
         semillaActual = uint64(keccak256(keccak256(block.number, semillaActual)));
         uint numGanador = semillaActual % pozoAcumulado;
-        registrarGanador(numGanador);
+        pagarGanador(numGanador);
         idRondaActual++;
         reiniciarRonda();
     }
     
-    function registrarGanador(uint numGanador) private {
+    function pagarGanador(uint numGanador) private {
         uint montoAcumulado = 0;
         address ganador;
         for (uint i = 0 ; i < participantes.length; i++) {
@@ -25,15 +23,8 @@ contract LoteriaRetirable is Loteria {
                 break;
             }
         }
-        ganancias[ganador] += pozoAcumulado;
+        ganador.transfer(pozoAcumulado);
         emit Sorteo(ganador, pozoAcumulado, idRondaActual, numGanador);
-    }
-
-    function retirarFondos() public {
-        uint montoGanado = ganancias[msg.sender];
-        require(montoGanado > 0, "No posee fondos para retirar");
-        ganancias[msg.sender] = 0;
-        msg.sender.transfer(montoGanado);
     }
     
 }
