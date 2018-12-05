@@ -35,7 +35,7 @@ contract Loteria {
             reiniciarRonda();
         }
         require(block.timestamp - inicioRonda < TIEMPO_MAXIMO, "La ronda anterior aun no se ha completado");
-        depositos[msg.sender] = msg.value;
+        depositos[msg.sender] += msg.value;
         if (!participantesExistentes[msg.sender]) {
             participantesExistentes[msg.sender] = true;
             participantes.push(msg.sender);
