@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import { blueGrey } from '@material-ui/core/colors';
-import LoteriaContract from "./contracts/LoteriaNormal.json";
+import LoteriaNormalContract from "./contracts/LoteriaNormal.json";
+import LoteriaRetirableContract from "./contracts/LoteriaRetirable.json";
 import getWeb3 from "./utils/getWeb3";
 import truffleContract from "truffle-contract";
 import { List, ListSubheader, ListItemText, ListItem, Grid, Dialog,
@@ -20,7 +21,7 @@ class HeaderLista extends Component {
     const itemsHeader = [];
     for (let i = 0; i < this.props.columnas.length; i++) {
       itemsHeader.push(
-        <Grid item sm={this.props.anchoColumnas[i]}>
+        <Grid item sm={this.props.anchoColumnas[i]} key={i}>
           <ListItemText primaryTypographyProps={this.typographyProps} primary={this.props.columnas[i]} />
         </Grid>
       );
@@ -121,6 +122,13 @@ class LoteriaApp extends Component {
     modalDesc: ""
   };
 
+  constructor(props) {
+    super(props);
+    if (props.retirable) {
+      this.state.fondosDisponibles = 0;
+    }
+  }
+
   theme = createMuiTheme({
     palette: {
       primary: blueGrey,
@@ -142,7 +150,12 @@ class LoteriaApp extends Component {
       const accounts = await web3.eth.getAccounts();
 
       // Get the contract instance.
-      const Contract = truffleContract(LoteriaContract);
+      let Contract;
+      if (this.props.retirable) {
+        Contract = truffleContract(LoteriaRetirableContract);
+      } else {
+        Contract = truffleContract(LoteriaNormalContract);
+      }
       Contract.setProvider(web3.currentProvider);
       const instance = await Contract.deployed();
 
@@ -217,12 +230,6 @@ class LoteriaApp extends Component {
           }
         }
         if (res.event === "Sorteo") {
-          // const itemDepositosRealizados = <ItemListaDepositos
-          //   key={this.state.sorteosRealizados.length}
-          //   listKey={this.state.sorteosRealizados.length}
-          //   direccion={res.args.ganador}
-          //   monto={monto}
-          // />;
           const itemSorteosRealizados = <ItemListaSorteos
             key={this.state.sorteosRealizados.length}
             listKey={this.state.sorteosRealizados.length}
@@ -244,11 +251,19 @@ class LoteriaApp extends Component {
             </ListItem>
           );
           this.setState(prevState => ({
-            //sorteosRealizados: [itemDepositosRealizados].concat(prevState.sorteosRealizados),
             sorteosRealizados: [itemSorteosRealizados].concat(prevState.sorteosRealizados),
             depositosRealizados: [],
             depositosTotales: [separadorRonda].concat(prevState.depositosTotales)
           }));
+          if (this.props.retirable) {
+            this.state.contract.ganancias.call(this.state.accounts[0]).then((res) => {
+              const monto = web3.utils.fromWei(res.toString(), 'ether');
+              console.log("FONDOS DISPONIBLES");
+              console.log(res);
+              console.log(monto);
+              this.setState({fondosDisponibles: monto});
+            });
+          }
         }
         contract.pozoAcumulado.call().then((res) => {
           const monto = web3.utils.fromWei(res.toString(), 'ether');
@@ -278,9 +293,19 @@ class LoteriaApp extends Component {
     });
   };
 
+  getMensajeDebug = (message) => {
+    if (process.env.REACT_APP_GANACHE_DEBUG == "true" && message.includes("revert")) {
+      return " | Mensaje: " + message.split("revert")[1];
+    } else {
+      return " | Mensaje: " + message;
+    }
+  };
+
   depositarMonto = () => {
     if (this.state.montoADepositar > 0) {
       console.log("depositarMonto()");
+      console.log("Monto a Depositar: " + this.state.montoADepositar);
+      console.log("En wei: " + this.state.web3.utils.toWei(this.state.montoADepositar, 'ether'));
       this.state.contract.depositar({
         from: this.state.accounts[0],
         value: this.state.web3.utils.toWei(this.state.montoADepositar, 'ether')
@@ -288,10 +313,8 @@ class LoteriaApp extends Component {
         this.showModal("Transacción realizada", "El monto ha sido enviado exitosamente.");
         console.log(res);
       }).catch((err) => {
-        let message = err.message;
-        if (message.includes("revert")) {
-          message = message.split("revert")[1];
-        }
+        let message = "Verique que la ronda anterior haya finalizado y que el monto a depositar sea mayor a cero.";
+        message += this.getMensajeDebug(err.message);
         this.showModal("Error al intentar realizar la transacción", message);
         console.log(err);
       });
@@ -301,19 +324,68 @@ class LoteriaApp extends Component {
   };
 
   sortearPozo = () => {
+    console.log("REACT_APP_GANACHE_DEBUG:");
+    console.log(process.env.REACT_APP_GANACHE_DEBUG);
     this.state.contract.sortearPozo({
       from: this.state.accounts[0]
     }).then((res)=>{
       console.log(res);
       this.showModal("Transacción realizada", "El pozo ha sido sorteado exitosamente.");
     }).catch((err) => {
-      let message = err.message;
-      if (message.includes("revert")) {
-        message = message.split("revert")[1];
-      }
+      let message = "Verique que el tiempo de la ronda actual no haya finalizado y que el pozo acumulado sea mayor a cero.";
+      message += this.getMensajeDebug(err.message);
       this.showModal("Error al intentar sortear el pozo", message);
       console.log(err);
     });
+  };
+
+  retirarFondos = () => {
+    const { web3, contract, accounts} = this.state;
+    contract.retirarFondos({
+      from: accounts[0]
+    }).then((res) => {
+      console.log(res);
+      this.showModal("Transacción realizada", "Los fondos han sido retirados con exito.");
+      contract.ganancias.call(accounts[0]).then((res) => {
+        const monto = web3.utils.fromWei(res.toString(), 'ether');
+        console.log("FONDOS DISPONIBLES");
+        console.log(res);
+        console.log(monto);
+        this.setState({fondosDisponibles: monto});
+      });
+    }).catch((err) => {
+      let message = "Verique que su cuenta posea fondos disponibles.";
+      message += this.getMensajeDebug(err.message);
+      this.showModal("Error al intentar retirar los fondos", message);
+      console.log(err);
+    });
+  };
+
+  mostrarPaneldeRetiroDeFondos = () => {
+    if (this.props.retirable) {
+      return(
+        <Grid item xs={12}>
+          <Paper className="paper-space">
+            <Grid container>
+              <Grid item xs={12}>
+                <Typography variant="h5">
+                  Fondos Disponibles
+                </Typography>
+                <Typography component="p">
+                  {this.state.fondosDisponibles + " ETH"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Button variant="contained" color="primary" onClick={this.retirarFondos}>
+                  Retirar
+                  <Icon className="icono">attach_money</Icon>
+                </Button>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      );
+    }
   };
 
   render() {
@@ -350,6 +422,7 @@ class LoteriaApp extends Component {
               </form>
             </Paper>
           </Grid>
+          {this.mostrarPaneldeRetiroDeFondos()}
           <Grid item xs={12}>
             <Paper className="paper-space">
               <Grid container>

@@ -16,7 +16,7 @@ contract LoteriaNormal is Loteria {
     function pagarGanador(uint numGanador) private {
         uint montoAcumulado = 0;
         address ganador;
-        for (uint i = 0 ; i < participantes.length; i++) {
+        for (uint i = 0; i < participantes.length; i++) {
             montoAcumulado += depositos[participantes[i]];
             if (numGanador <= montoAcumulado) {
                 ganador = participantes[i];

@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import LoteriaApp from './LoteriaApp';
-import LoteriaAppRetirable from './LoteriaAppRetirable';
 import { Paper, Grid, Typography, Button } from "@material-ui/core";
 import "./LoteriaApp.css";
 
@@ -35,8 +34,8 @@ const AppRouter = () => (
   <Router>
     <Switch>
       <Route exact path="/" component={Indice} />
-      <Route path="/normal/" component={LoteriaApp} />
-      <Route path="/retirable/" component={LoteriaAppRetirable} />
+      <Route path="/normal/" render={() => <LoteriaApp retirable={false}/>} />
+      <Route path="/retirable/" render={() => <LoteriaApp retirable={true}/>} />
     </Switch>
   </Router>
 );
