@@ -24,6 +24,10 @@ contract Loteria {
         inicioRonda = block.timestamp;
         numBloqueSorteo = block.number;
     }
+
+    function sortearPozo() public;
+
+    function cancelarLoteria() public;
     
     function () public payable {
         depositar();
@@ -44,8 +48,6 @@ contract Loteria {
         semillaActual = uint64(keccak256(keccak256(msg.sender, semillaActual)));
         emit Deposito(msg.sender, msg.value, idRondaActual);
     }
-
-    function sortearPozo() public;
     
     function reiniciarRonda() internal {
         pozoAcumulado = 0;
@@ -56,19 +58,6 @@ contract Loteria {
         inicioRonda = block.timestamp;
         numBloqueSorteo = block.number;
         delete participantes;
-    }
-    
-    function cancelarLoteria() public {
-        require(msg.sender == propietario, "Solo el creador puede cancelar el contrato");
-        uint precioTransferencia = COSTO_TRANSFERENCIA * tx.gasprice;
-        uint montoDevolucion;
-        for (uint i = 0 ; i < participantes.length; i++) {
-            montoDevolucion = depositos[participantes[i]] - precioTransferencia;
-            if (montoDevolucion > 0) {
-                participantes[i].transfer(montoDevolucion);
-            }
-        }
-        selfdestruct(propietario);
     }
 
     function tiempoRestanteRonda() public view returns(uint) {

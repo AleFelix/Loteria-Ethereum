@@ -26,5 +26,11 @@ contract LoteriaNormal is Loteria {
         ganador.transfer(pozoAcumulado);
         emit Sorteo(ganador, pozoAcumulado, idRondaActual, numGanador);
     }
+
+    function cancelarLoteria() public {
+        require(msg.sender == propietario, "Solo el creador puede cancelar el contrato");
+        require(pozoAcumulado == 0, "Para cancelar el contrato, el pozo debe estar vacío");
+        selfdestruct(propietario);
+    }
     
 }

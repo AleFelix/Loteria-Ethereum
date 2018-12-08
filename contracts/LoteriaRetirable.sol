@@ -35,5 +35,16 @@ contract LoteriaRetirable is Loteria {
         ganancias[msg.sender] = 0;
         msg.sender.transfer(montoGanado);
     }
+
+    function cancelarLoteria() public {
+        require(msg.sender == propietario, "Solo el creador puede cancelar el contrato");
+        require(pozoAcumulado == 0, "Para cancelar el contrato, el pozo debe estar vacío");
+        for (uint i = 0; i < participantes.length; i++) {
+            if (ganancias[participantes[i]] > 0) {
+                revert("Aun quedan ganancias que no fueron reclamadas por los participantes");
+            }
+        }
+        selfdestruct(propietario);
+    }
     
 }
