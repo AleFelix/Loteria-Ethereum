@@ -172,9 +172,6 @@ class LoteriaApp extends Component {
   runLoteria = () => {
     const contract = this.state.contract;
 
-    //const depositoEvent = contract.Deposito({}, {fromBlock: 0});
-    //const sorteoEvent = contract.Sorteo({}, {fromBlock: 0});
-
     contract.numBloqueSorteo.call().then((res) => {
       this.observarCambios(res.toString());
     });
@@ -314,7 +311,7 @@ class LoteriaApp extends Component {
         console.log(res);
       }).catch((err) => {
         let message = "Verique que la ronda anterior haya finalizado y que el monto a depositar sea mayor a cero.";
-        message += this.getMensajeDebug(err.message);
+        console.log(this.getMensajeDebug(err.message));
         this.showModal("Error al intentar realizar la transacción", message);
         console.log(err);
       });
@@ -333,7 +330,7 @@ class LoteriaApp extends Component {
       this.showModal("Transacción realizada", "El pozo ha sido sorteado exitosamente.");
     }).catch((err) => {
       let message = "Verique que el tiempo de la ronda actual no haya finalizado y que el pozo acumulado sea mayor a cero.";
-      message += this.getMensajeDebug(err.message);
+      console.log(this.getMensajeDebug(err.message));
       this.showModal("Error al intentar sortear el pozo", message);
       console.log(err);
     });
@@ -355,7 +352,7 @@ class LoteriaApp extends Component {
       });
     }).catch((err) => {
       let message = "Verique que su cuenta posea fondos disponibles.";
-      message += this.getMensajeDebug(err.message);
+      console.log(this.getMensajeDebug(err.message));
       this.showModal("Error al intentar retirar los fondos", message);
       console.log(err);
     });
